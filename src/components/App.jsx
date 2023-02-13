@@ -1,4 +1,5 @@
-import { Component } from 'react';
+import React from 'react';
+import { useState, useEffect } from 'react';
 import { ContactForm } from './ContactForm/ContactForm';
 import { ContactList } from './ContactList/ContactList';
 import { nanoid } from 'nanoid';
@@ -9,41 +10,41 @@ import {
 } from './ContactForm/ContactForm.styled';
 import { Filter } from './Filter/Filter';
 
-export class App extends Component {
-  state = {
-    contacts: [
-      { id: 'id-1', name: 'Rosie Simpson', number: '459-12-56' },
-      { id: 'id-2', name: 'Hermione Kline', number: '443-89-12' },
-      { id: 'id-3', name: 'Eden Clements', number: '645-17-79' },
-      { id: 'id-4', name: 'Annie Copeland', number: '227-91-26' },
-    ],
-    filter: '',
-  };
+export const App = () => {
+  // state = {
+  //   contacts: [
+  //     { id: 'id-1', name: 'Rosie Simpson', number: '459-12-56' },
+  //     { id: 'id-2', name: 'Hermione Kline', number: '443-89-12' },
+  //     { id: 'id-3', name: 'Eden Clements', number: '645-17-79' },
+  //     { id: 'id-4', name: 'Annie Copeland', number: '227-91-26' },
+  //   ],
+  //   filter: '',
+  // };
+  const [contacts, setContacts] = useState([
+    { id: 'id-1', name: 'Rosie Simpson', number: '459-12-56' },
+    { id: 'id-2', name: 'Hermione Kline', number: '443-89-12' },
+    { id: 'id-3', name: 'Eden Clements', number: '645-17-79' },
+    { id: 'id-4', name: 'Annie Copeland', number: '227-91-26' },
+  ]);
+  const [filter, setFilter] = useState('');
+  const [syncLS, setSyncLC] = useState(true);
 
-  componentDidMount() {
-    const contactsFromLS = JSON.parse(localStorage.getItem('contactlist'));
-    if (contactsFromLS) {
-      this.setState({
-        contacts: contactsFromLS,
-      });
+  useEffect(() => {
+    if (syncLS) {
+      const contactsFromLS = JSON.parse(localStorage.getItem('contactlist'));
+      if (contactsFromLS.length !== 0) setContacts(contactsFromLS);
+      setSyncLC(false);
+    } else {
+      localStorage.setItem('contactlist', JSON.stringify(contacts));
     }
-  }
+  }, [contacts, syncLS]);
 
-  componentDidUpdate(prevProps, prevState) {
-    const prevStateContacts = prevState.contacts;
-    const nextStayContacts = this.state.contacts;
-
-    if (prevStateContacts !== nextStayContacts) {
-      localStorage.setItem('contactlist', JSON.stringify(nextStayContacts));
-    }
-  }
-
-  submitHandler = e => {
+  const submitHandler = e => {
     e.preventDefault();
 
     const { name, number } = e.target.elements;
     const newName = e.target.elements.name.value;
-    const contactsList = [...this.state.contacts];
+    const contactsList = [...contacts];
     const newContact = {
       id: nanoid(),
       name: name.value,
@@ -56,49 +57,37 @@ export class App extends Component {
     } else {
       contactsList.push({ ...newContact });
     }
-
-    this.setState({ contacts: contactsList });
+    setContacts(contactsList);
   };
 
-  removeContactItem = id => {
-    this.setState(({ contacts }) => {
-      return { contacts: contacts.filter(item => item.id !== id) };
+  const removeContactItem = id => {
+    setContacts(contacts.filter(item => item.id !== id));
+  };
+
+  const filterHandler = e => {
+    setFilter(e.target.value);
+  };
+
+  const getFilterContactsName = () => {
+    return contacts.filter(contact => {
+      return contact.name.toLowerCase().includes(filter.toLowerCase());
     });
   };
 
-  filterHandler = e => {
-    this.setState({
-      filter: e.target.value,
-    });
-  };
-
-  getFilterContactsName = () => {
-    return this.state.contacts.filter(contact => {
-      return contact.name
-        .toLowerCase()
-        .includes(this.state.filter.toLocaleLowerCase());
-    });
-  };
-
-  render() {
-    return (
-      <>
-        <SectionWrap>
-          <Heading>Phonebook</Heading>
-          <ContactForm onSubmitHandler={this.submitHandler} />
-        </SectionWrap>
-        <SectionWrap>
-          <ContactsTitle>Contacts</ContactsTitle>
-          <Filter
-            filter={this.state.filter}
-            filterHandler={this.filterHandler}
-          />
-          <ContactList
-            contacts={this.getFilterContactsName()}
-            removeHandler={this.removeContactItem}
-          />
-        </SectionWrap>
-      </>
-    );
-  }
-}
+  return (
+    <>
+      <SectionWrap>
+        <Heading>Phonebook</Heading>
+        <ContactForm onSubmitHandler={submitHandler} />
+      </SectionWrap>
+      <SectionWrap>
+        <ContactsTitle>Contacts</ContactsTitle>
+        <Filter filter={filter} filterHandler={filterHandler} />
+        <ContactList
+          contacts={getFilterContactsName()}
+          removeHandler={removeContactItem}
+        />
+      </SectionWrap>
+    </>
+  );
+};
